@@ -40,6 +40,8 @@ class Trainer:
 
     def train_one_epoch(self, train_loader, val_loader, epoch):
         self.model.train()
+        # self.model.text_model.train()
+        # self.model.vision_model.train()
         total_loss = 0.0
         progress_bar = tqdm(train_loader, desc=f"Training Epoch {epoch+1}")
 
@@ -65,10 +67,26 @@ class Trainer:
                 loss_t2i = self.criterion(logits_per_text, labels)
                 loss = (loss_i2t + loss_t2i) / 2.0
 
+                ##### Store the initial weights
+                before_weights = {}
+                for name, param in self.model.named_parameters():
+                    before_weights[name] = param.detach().cpu().clone()
+
                 # Backpropagation
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+
+                all_changes = 0.0
+
+                ##### Print the change in weights
+                for name, param in self.model.named_parameters():
+                    change = torch.sum(torch.abs(param.detach().cpu() - before_weights[name]))
+                    all_changes += abs(change)
+                    # if abs(change) > 0.0000001:
+                    #     print(f"Change in {name}: {change}")
+                
+                print(f"all-changes sum: {all_changes}")
 
                 total_loss += loss.item()
 
@@ -106,7 +124,6 @@ class Trainer:
             
             self.global_iteration += 1
 
-                
 
     def validate_one_epoch(self, val_loader, epoch, step):
         self.model.eval()

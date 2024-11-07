@@ -111,8 +111,16 @@ if __name__ == "__main__":
     ).to(device)
 
     # Setup optimizer
-    optimizer = torch.optim.Adam(clip_model.parameters(), lr=args.learning_rate)
+    
 
+    if args.use_peft:
+        lora_params = [p for n, p in clip_model.named_parameters() if 'lora' in n]
+        other_params = list(clip_model.text_projection.parameters()) + list(clip_model.vision_projection.parameters()) + [clip_model.logit_scale]
+        optimizer = torch.optim.Adam(lora_params + other_params, lr=args.learning_rate)
+    else:
+        other_params = list(clip_model.text_projection.parameters()) + list(clip_model.vision_projection.parameters()) + [clip_model.logit_scale]
+        optimizer = torch.optim.Adam(other_params, lr=args.learning_rate)
+    
     # Initialize the trainer
     trainer = Trainer(
         clip_model, 
@@ -145,7 +153,7 @@ if __name__ == "__main__":
     if args.use_wandb:
         wandb.login(key="")
         wandb.init(
-            project="clip_lora", 
+            project="CSCI2950X_ImprovingCLIP", 
             name=f"clip_{args.text_model_size}-text_{args.vision_model_size}-vision_{'peft' if args.use_peft else 'projection_only'}_seed{args.seed}",
             config=vars(args),
             entity="ethathua"

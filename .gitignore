@@ -1,5 +1,7 @@
 # Cache folders
 __pycache__
+training/__pycache__
+training/wandb
 .ipynb_checkpoints
 .slurm_logs
 
@@ -14,3 +16,5 @@ data/
 
 # Slurm scripts
 slurm/
+
+__MACOSX/

@@ -2,37 +2,18 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn.init as init
+
 
 from transformers import AutoModel
 from peft import get_peft_model, LoraConfig
-
-# https://www.reddit.com/r/LocalLLaMA/comments/15sgg4m/what_modules_should_i_target_when_training_using/
-def find_target_modules(model):
-    # Initialize a Set to Store Unique Layers
-    unique_layers = set()
-    
-    # Iterate Over All Named Modules in the Model
-    for name, module in model.named_modules():
-        # Check if the Module Type Contains 'Linear4bit'
-        if "h" in str(type(module)):
-        # if True:
-            # Extract the Type of the Layer
-            layer_type = name.split('.')[-1]
-            
-            # Add the Layer Type to the Set of Unique Layers
-            unique_layers.add(layer_type)
-
-    # Return the Set of Unique Layers Converted to a List
-
-    print(list(unique_layers))
-
-    return list(unique_layers)
 
 
 class ProjectionHead(nn.Module):
     def __init__(self, input_dim, output_dim):
         super().__init__()
         self.projection = nn.Linear(input_dim, output_dim)
+        init.xavier_uniform_(self.projection.weight)
 
     def forward(self, x):
         return self.projection(x)
@@ -71,6 +52,11 @@ class CustomCLIP(nn.Module):
         # Define projection heads to map to joint space
         self.text_projection = ProjectionHead(text_hidden_size, embedding_dim)
         self.vision_projection = ProjectionHead(vision_hidden_size, embedding_dim)
+
+        #### FOR NOW, Initializing the projection layers with pretrained weights:
+        ckpt = torch.load("/users/thua5/ssl_proj/checkpoints/clip_medium-text_medium-vision_projection_only_seed44.pt")
+        self.text_projection.load_state_dict({".".join(k.split(".")[1:]):v for k,v in ckpt['model_state_dict'].items() if 'text_projection' in k})
+        self.vision_projection.load_state_dict({".".join(k.split(".")[1:]):v for k,v in ckpt['model_state_dict'].items() if 'vision_projection' in k})
 
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 
