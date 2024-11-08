@@ -80,6 +80,8 @@ def get_args():
                         help="Whether to log metrics to Weights and Biases")
     parser.add_argument("--checkpoint_dir", type=str, default="/users/thua5/ssl_proj/checkpoints", 
                         help="Directory where model checkpoints will be saved")
+    parser.add_argument("--pretrained_projector_ckpt_path", type=str, default="")
+
 
     # Paths to MSCOCO Data
     parser.add_argument("--train_captions_json_path", type=str, default="/gpfs/data/superlab/datasets/coco/annotations/captions_train2017.json")
@@ -107,14 +109,15 @@ if __name__ == "__main__":
         text_model_name, 
         vision_model_name, 
         embedding_dim=args.embedding_dim,
-        use_peft=args.use_peft
+        use_peft=args.use_peft,
+        pretrained_projector_ckpt_path=args.pretrained_projector_ckpt_path
     ).to(device)
 
     # Setup optimizer
-    
 
     if args.use_peft:
         lora_params = [p for n, p in clip_model.named_parameters() if 'lora' in n]
+        # other_params = []
         other_params = list(clip_model.text_projection.parameters()) + list(clip_model.vision_projection.parameters()) + [clip_model.logit_scale]
         optimizer = torch.optim.Adam(lora_params + other_params, lr=args.learning_rate)
     else:
@@ -130,7 +133,8 @@ if __name__ == "__main__":
         log_interval=args.log_interval, 
         eval_interval=args.eval_interval,
         use_wandb=args.use_wandb,
-        checkpoint_dir=args.checkpoint_dir
+        checkpoint_dir=args.checkpoint_dir,
+        device=device
     )
 
     train_dataloader = MSCOCODataLoader(
@@ -151,7 +155,7 @@ if __name__ == "__main__":
 
     # Edit before individual runs
     if args.use_wandb:
-        wandb.login(key="")
+        wandb.login(key="858190b4f954036d9c3fdefa5ba9c1ed5be9a7df")
         wandb.init(
             project="CSCI2950X_ImprovingCLIP", 
             name=f"clip_{args.text_model_size}-text_{args.vision_model_size}-vision_{'peft' if args.use_peft else 'projection_only'}_seed{args.seed}",

@@ -20,7 +20,7 @@ class ProjectionHead(nn.Module):
 
 
 class CustomCLIP(nn.Module):
-    def __init__(self, text_model_name, vision_model_name, embedding_dim=768, use_peft=False):
+    def __init__(self, text_model_name, vision_model_name, embedding_dim=768, use_peft=False, pretrained_projector_ckpt_path=""):
         super().__init__()
         # Load models from Huggingface
         self.text_model = AutoModel.from_pretrained(text_model_name)
@@ -53,10 +53,11 @@ class CustomCLIP(nn.Module):
         self.text_projection = ProjectionHead(text_hidden_size, embedding_dim)
         self.vision_projection = ProjectionHead(vision_hidden_size, embedding_dim)
 
-        #### FOR NOW, Initializing the projection layers with pretrained weights:
-        ckpt = torch.load("/users/thua5/ssl_proj/checkpoints/clip_medium-text_medium-vision_projection_only_seed44.pt")
-        self.text_projection.load_state_dict({".".join(k.split(".")[1:]):v for k,v in ckpt['model_state_dict'].items() if 'text_projection' in k})
-        self.vision_projection.load_state_dict({".".join(k.split(".")[1:]):v for k,v in ckpt['model_state_dict'].items() if 'vision_projection' in k})
+        if pretrained_projector_ckpt_path != "":
+            #### FOR NOW, Initializing the projection layers with pretrained weights:
+            ckpt = torch.load(pretrained_projector_ckpt_path, weights_only=False)
+            self.text_projection.load_state_dict({".".join(k.split(".")[1:]):v for k,v in ckpt['model_state_dict'].items() if 'text_projection' in k})
+            self.vision_projection.load_state_dict({".".join(k.split(".")[1:]):v for k,v in ckpt['model_state_dict'].items() if 'vision_projection' in k})
 
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
 

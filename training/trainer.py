@@ -26,6 +26,7 @@ class Trainer:
         self.device = device
         self.use_wandb = use_wandb
         self.checkpoint_dir = checkpoint_dir
+        self.verbose = False
 
         self.global_iteration = 0
 
@@ -68,25 +69,28 @@ class Trainer:
                 loss = (loss_i2t + loss_t2i) / 2.0
 
                 ##### Store the initial weights
-                before_weights = {}
-                for name, param in self.model.named_parameters():
-                    before_weights[name] = param.detach().cpu().clone()
+                if self.verbose:
+                    before_weights = {}
+                    for name, param in self.model.named_parameters():
+                        before_weights[name] = param.detach().cpu().clone()
 
                 # Backpropagation
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-                all_changes = 0.0
+                
 
                 ##### Print the change in weights
-                for name, param in self.model.named_parameters():
-                    change = torch.sum(torch.abs(param.detach().cpu() - before_weights[name]))
-                    all_changes += abs(change)
-                    # if abs(change) > 0.0000001:
-                    #     print(f"Change in {name}: {change}")
-                
-                print(f"all-changes sum: {all_changes}")
+                if self.verbose:
+                    all_changes = 0.0
+                    for name, param in self.model.named_parameters():
+                        change = torch.sum(torch.abs(param.detach().cpu() - before_weights[name]))
+                        all_changes += abs(change)
+                        # if abs(change) > 0.0000001:
+                        #     print(f"Change in {name}: {change}")
+                    
+                    print(f"all-changes sum: {all_changes}")
 
                 total_loss += loss.item()
 
