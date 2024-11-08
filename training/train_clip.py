@@ -155,7 +155,6 @@ if __name__ == "__main__":
 
     # Edit before individual runs
     if args.use_wandb:
-        wandb.login(key="858190b4f954036d9c3fdefa5ba9c1ed5be9a7df")
         wandb.init(
             project="CSCI2950X_ImprovingCLIP", 
             name=f"clip_{args.text_model_size}-text_{args.vision_model_size}-vision_{'peft' if args.use_peft else 'projection_only'}_seed{args.seed}",
