@@ -64,6 +64,9 @@ class CustomCLIP(nn.Module):
     def encode_image(self, vision_inputs):
         """Encode images and project to joint embedding space."""
 
+        if type(vision_inputs) != dict:
+            vision_inputs = {"pixel_values": vision_inputs}
+
         if self.use_peft:
             vision_embeddings = self.vision_model(**vision_inputs).last_hidden_state[:, 0, :]  # CLS token
         else:
